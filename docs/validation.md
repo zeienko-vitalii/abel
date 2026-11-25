@@ -1,3 +1,5 @@
+Use FVM for all Flutter/Dart commands (`fvm flutter` / `fvm dart`). Prefer `just` recipes — they already wrap fvm.
+
 After a change:
 
 - `just check`
