@@ -23,7 +23,3 @@
 - [ ] 📝 Documentation
 - [ ] 🗑️ Chore
 - [ ] 🧪 Test
-
-## Checks
-
-- [ ] `just check` passed

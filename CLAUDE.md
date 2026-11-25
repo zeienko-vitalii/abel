@@ -6,7 +6,6 @@ Be extremely concise in chat and commits; sacrifice grammar for concision.
 - YAGNI/KISS — smallest change that fully solves the task.
 - Never mask failures (no skip/retry/silence).
 - No secrets, key material, or device credentials.
-- Repeated mistake (2nd time) → add a one-line rule to the doc for that area, not here, unless it applies everywhere.
 
 **Workflow**
 - Every change starts in `docs/intents/<kebab-name>/`: `intent.md` → `spec.md` → `plan.md`, each accepted by me before the next.
@@ -23,3 +22,7 @@ Be extremely concise in chat and commits; sacrifice grammar for concision.
 - Testing: [docs/testing.md](docs/testing.md) — before writing tests
 - Git: [docs/git.md](docs/git.md) — before branching, merging, or PR workflow
 - Review: [REVIEW.md](REVIEW.md) — before reviewing a PR
+
+**When stuck**
+- 2nd mistake in the same area → open that area's doc ([architecture](docs/architecture.md) | [presentation](docs/presentation.md) | [testing](docs/testing.md) | [validation](docs/validation.md) | [git](docs/git.md)); add a one-line rule there if the gap is reusable (here only if it applies everywhere).
+- Still stuck or high-risk → stop for Vitaly before more code.

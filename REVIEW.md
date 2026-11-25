@@ -21,4 +21,4 @@ Generated files (`*.g.dart`, `*.freezed.dart`, l10n output), and anything `just 
 ## Rules
 - Findings inform; they don't approve or block on their own.
 - The agent that wrote the code never approves it. I merge (squash only).
-- A review mistake made twice goes into `CLAUDE.md` → Things Claude gets wrong.
+- A review mistake made twice → [CLAUDE.md](CLAUDE.md) **When stuck**.
