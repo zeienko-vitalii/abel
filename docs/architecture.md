@@ -1,5 +1,5 @@
 Clean Architecture, feature-first. One Flutter app package **`abel`** at the repo
-root (product name: Release Copilot). Dependency rule: **presentation → domain ←
+root (product name: Release Copilot). **Platforms:** macOS only (`macos/`). Dependency rule: **presentation → domain ←
 data**. Domain never imports data.
 
 **Top-level under `lib/`**
