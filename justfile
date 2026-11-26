@@ -31,6 +31,7 @@ gen:
 
 check:
     fvm dart format --set-exit-if-changed . && \
+    bash -euo pipefail -c 'if rg -q "super\\.key,\\s*required" lib; then rg -n "super\\.key,\\s*required" lib >&2; echo "required named parameters must precede super.key" >&2; exit 1; fi' && \
     fvm flutter analyze --fatal-infos && \
     fvm dart run dart_code_linter:metrics analyze lib --set-exit-on-violation-level=warning && \
     fvm dart run dart_code_linter:metrics check-unused-files lib --fatal-unused && \
