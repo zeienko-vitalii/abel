@@ -1,35 +1,30 @@
 set shell := ["bash", "-c"]
 set positional-arguments
 
-fvm := `command -v fvm || true`
-dart := if fvm == "" { "dart" } else { "fvm dart" }
-very_good := dart + " pub global run very_good_cli:very_good"
+very_good := "fvm dart pub global run very_good_cli:very_good"
 
 [private]
 default:
     @just --list
 
-build_gen:
-    fvm dart run build_runner build -d
+[private]
+_fvm:
+    @command -v fvm >/dev/null || { echo "fvm required: brew install fvm" >&2; exit 1; }
 
-build_clean:
+setup: _fvm
+    fvm install && \
+    fvm flutter pub get && \
+    fvm dart pub global activate very_good_cli 1.7.0
+
+build_clean: _fvm
     fvm flutter clean && fvm flutter pub get
 
-build_clean_ios: build_clean
-    cd ios && pod cache clean --all && pod install
-
-build_l10n:
-    fvm dart run slang
-
-gen:
+gen: _fvm
     fvm flutter --version && \
-    fvm flutter clean && \
     fvm flutter pub get && \
-    fvm dart run build_runner build --delete-conflicting-outputs && \
-    fvm dart run slang && \
-    echo "Code generation completed successfully!"
+    echo "Code generation packages not on pubspec yet"
 
-check:
+check: _fvm
     fvm dart format --set-exit-if-changed . && \
     bash -euo pipefail -c 'if rg -q "super\\.key,\\s*required" lib; then rg -n "super\\.key,\\s*required" lib >&2; echo "required named parameters must precede super.key" >&2; exit 1; fi' && \
     fvm flutter analyze --fatal-infos && \
@@ -37,18 +32,11 @@ check:
     fvm dart run dart_code_linter:metrics check-unused-files lib --fatal-unused && \
     fvm dart run dart_code_linter:metrics check-unused-code lib --fatal-unused
 
-# Paths must be under test/. TZ=Europe/Berlin so DST tests see real clock changes.
-test *paths:
+# Paths must be under test/.
+test *paths: _fvm
     #!/usr/bin/env bash
     set -euo pipefail
-    set -f
     for test_path in "$@"; do
-        case "$test_path" in
-            test/*) ;;
-            *) echo "TEST_PATHS entries must be under test/: $test_path" >&2; exit 1 ;;
-        esac
-        case "$test_path" in
-            *[!A-Za-z0-9_./-]*) echo "TEST_PATHS entry has unsupported characters: $test_path" >&2; exit 1 ;;
-        esac
+        [[ "$test_path" == test/* ]] || { echo "test paths must be under test/: $test_path" >&2; exit 1; }
     done
-    TZ=Europe/Berlin {{ very_good }} test --coverage --test-randomize-ordering-seed random "$@" <<< "$(echo n)"
+    {{ very_good }} test --coverage --test-randomize-ordering-seed random "$@"
