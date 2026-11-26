@@ -10,9 +10,13 @@ Be extremely concise in chat and commits; sacrifice grammar for concision.
 - No secrets, key material, or device credentials.
 
 **Workflow**
-- Every change starts in `docs/intents/<kebab-name>/`: `intent.md` → `spec.md` → `plan.md`, each accepted by me before the next.
+- Every change starts in `docs/intents/<kebab-name>/`: `intent.md` → `spec.md` → `plan.md`, each accepted by the owner before the next.
 - New intents copy `docs/intents/_template.md`. Product context: [docs/SPEC.md](docs/SPEC.md).
 - No code without an accepted `plan.md`. Save it as `docs/intents/<kebab-name>/plan.md`, not `~/.claude/plans/`.
+- Write `plan.md` in the **main session** (not a coding subagent).
+- Non-trivial implementation → **fast coding subagent**; PR **review** → separate **stronger model** in its own session.
+- The implementer never reviews their own code; the reviewer runs analyzer/tests and reads the full diff ([REVIEW.md](REVIEW.md)).
+- The owner's request is the starting point — if you see a clearly better solution, stop for owner approval before continuing.
 - If the code departs from the plan, update `plan.md` in the same commit.
 - Version via git only; never create `v2` copies.
 
@@ -27,4 +31,4 @@ Be extremely concise in chat and commits; sacrifice grammar for concision.
 
 **When stuck**
 - 2nd mistake in the same area → open that area's doc ([architecture](docs/architecture.md) | [presentation](docs/presentation.md) | [testing](docs/testing.md) | [validation](docs/validation.md) | [git](docs/git.md)); add a one-line rule there if the gap is reusable (here only if it applies everywhere).
-- Still stuck or high-risk → stop for Vitaly before more code.
+- Still stuck or high-risk → stop for owner approval before more code.
