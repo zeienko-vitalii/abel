@@ -1,4 +1,5 @@
 # Miscellaneous
+.cursor/no-co-authored-by
 *.class
 *.log
 *.pyc
