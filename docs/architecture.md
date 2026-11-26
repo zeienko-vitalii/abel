@@ -1,13 +1,15 @@
-Clean Architecture, feature-first. Dependency rule: presentation → domain ← data.
-Domain never imports Flutter, plugins, or data.
+Clean Architecture, feature-first. One Flutter app package **`abel`** at the repo
+root (product name: Release Copilot). Dependency rule: **presentation → domain ←
+data**. Domain never imports data.
 
 **Top-level under `lib/`**
-- `core/` — configs, constants, app-wide Cubits, shared presentation/services,
-  theme, utilities, logging, DI (`get_it` + `injectable`), and other cross-
-  feature wiring.
 - `app/` — root `MaterialApp` / app widget only: router, theme application,
   top-level providers. No feature logic.
-- `features/<feature>/` — each feature owns `presentation|domain|data`.
+- `core/` — configs, constants, app-wide Cubits, shared presentation/services,
+  theme, utilities, logging, DI (`get_it` + `injectable`), and other cross-
+  feature wiring. No separate `lib/di/`.
+- `features/<feature>/` — each feature owns `presentation`, `domain`, and
+  `data`.
 
 **Layers (per feature)**
 - **presentation** — Cubit by default; Bloc when you need event streams,
@@ -16,7 +18,7 @@ Domain never imports Flutter, plugins, or data.
   Cubit/Bloc; widgets render state.
 - **domain** — `Entity*` (freezed), repository abstracts, concrete UseCases
   (`deps` via ctor + `call()`). No UseCase interfaces / `*Impl`. Fields
-  non-null unless optional. No I/O, no SDK types.
+  non-null unless optional. Prefer no Flutter, plugins, I/O, or SDK types.
 - **data** — `Model*`, repository `*_impl`, datasources, DTOs, mappers.
   Implements domain contracts.
 

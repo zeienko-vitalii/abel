@@ -2,7 +2,7 @@
 
 Repo: `abel` (Abel = Release Copilot).
 
-High-level product and technical spec for a local-first macOS Flutter app that takes a Flutter project from live store versions to the next build, upload, notes, and status, including AI release notes and an MCP server in the first cut.
+High-level product and technical spec for a local-first macOS Flutter app that takes a Flutter project from live store versions to the next build, upload, notes, and status, including AI release notes in the first cut. A local MCP server and CLI are post-MVP.
 
 - [Overview, goals, and non-goals](#overview)
 - [Decisions](#decisions)
@@ -20,10 +20,10 @@ High-level product and technical spec for a local-first macOS Flutter app that t
 - [Data model](#data-model)
 - [API integration](#apis)
 - [Security](#security)
-- [MCP server](#mcp)
 - [Milestones](#milestones)
 - [Risks and remaining questions](#risks)
 - [Later roadmap](#roadmap)
+  - [MCP server and CLI](#mcp)
 - [Sources](#sources)
 
 <a id="overview"></a>
@@ -34,7 +34,7 @@ Release Copilot is a macOS desktop app, built in Flutter for the macOS target, t
 
 > **Dogfood first**
 >
-> The price goal is about $5 a month for a packed tool later. The MVP is a personal local tool with no billing, no accounts, and no cloud of its own. AI release notes from git and a local MCP server are in this first cut, not a later phase.
+> The price goal is about $5 a month for a packed tool later. The MVP is a personal local tool with no billing, no accounts, and no cloud of its own. AI release notes from git are in this first cut. A local MCP server and CLI come after dogfood MVP.
 
 ### Goals
 
@@ -43,7 +43,6 @@ Release Copilot is a macOS desktop app, built in Flutter for the macOS target, t
 - Run a local `flutter build` and upload the artifact, with the log in the UI.
 - Notify on TestFlight processing, Play review or rollout changes, and rejections.
 - Draft store-ready release notes from `git log` since the last release tag, with the user's OpenAI account, then let the user edit and push them.
-- Expose the same actions over a local MCP server so Cursor or Claude Code can drive a release, with destructive steps confirmed in the app.
 
 ### Non-goals for the MVP
 
@@ -81,7 +80,7 @@ Existing options leave a gap the $5 goal is meant to fill later. Thimble is free
 
 | Product | Stores | Price | Gap versus this MVP |
 | --- | --- | --- | --- |
-| Thimble | Play and Apple | Free | No bump, local build, notes, or MCP |
+| Thimble | Play and Apple | Free | No bump, local build, or notes |
 | Helm | Apple only | $9.99/month | No Play, and above the $5 goal |
 | Asomium | Apple only | €14.99/month | No Play, and above the $5 goal |
 | Codemagic, Bitrise, Runway | Both, in CI | Team or cloud pricing | Hosted pipelines, not a local dogfood tool |
@@ -90,7 +89,7 @@ Existing options leave a gap the $5 goal is meant to fill later. Thimble is free
 
 ## User stories
 
-Each story is written from Vitalii's desk on a release day. The MCP variants are the same jobs, started from Cursor or Claude Code.
+Each story is written from Vitalii's desk on a release day.
 
 1. **See what is live before I bump**
 
@@ -112,10 +111,6 @@ Each story is written from Vitalii's desk on a release day. The MCP variants are
 
    A macOS notification tells me when TestFlight processing finishes, when a Play review or rollout changes, or when a submission is rejected.
 
-6. **Drive the same loop from the agent**
-
-   Cursor or Claude Code can read versions, propose a bump, generate notes, and start a build over MCP, but any write, upload, or push waits for a confirmation in the app.
-
 <a id="features"></a>
 
 ## Feature specs
@@ -131,7 +126,7 @@ The old open question was how much of a multi-package Flutter workspace the firs
 The default is the first of those. The MVP supports one git repo that contains one Flutter app with multiple flavors, because that is Vitalii's own case (ProductA, ProductB, DevProductA, DevProductB). Each flavor maps to a store identity and a version source. Melos or other multi-package workspaces come later.
 
 - A flavor record includes a name, Play package name, iOS bundle ID, Xcode scheme, and a marketing-version source.
-- Marketing versions can differ per product. The supported source in the MVP is a custom `flavor_versions:` section in `pubspec.yaml`, read by a small script or by the core package and passed to Flutter as `--build-name`. The shared build number is passed as `--build-number`.
+- Marketing versions can differ per product. The supported source in the MVP is a custom `flavor_versions:` section in `pubspec.yaml`, read by app domain/data code and passed to Flutter as `--build-name`. The shared build number is passed as `--build-number`.
 - The shared build number is computed per flavor, across that flavor's Play and iOS listings only. ProductA and ProductB do not share a counter.
 - Dev flavors can point at internal or TestFlight destinations and still use the same rules.
 - Builds use the mapped Xcode scheme and Flutter flavor flags. If a scheme or flavor is missing, the UI says so before a build starts.
@@ -157,7 +152,7 @@ Flutter versioning is `x.y.z+N`, where `x.y.z` is the marketing version (`versio
 - Build strings that are not plain integers are excluded, and the UI warns so the user can set `N` by hand. Detecting Play versus iOS drift, or flavor-counter drift, is explicitly out of the MVP.
 - Marketing version changes are optional and explicit, and come from that flavor's version source.
 - Optional git commit and tag are off by default. When tagging, the default is `v1.2.3` (marketing version only, with a v prefix). Per-product tags such as `productA/v1.2.3` are postponed.
-- The write is previewed and confirmed before the file or git state changes, including when the request comes from MCP.
+- The write is previewed and confirmed before the file or git state changes.
 
 <a id="feature-build"></a>
 
@@ -197,30 +192,35 @@ Notes are generated from `git log` since the last release tag (or a tag or commi
 
 ## Architecture
 
-One Dart core package owns domain logic, store clients, git and version writes, process running, and note generation. The Flutter macOS UI, a small CLI, and the MCP server are three fronts over that package. The UI uses BLoC, Dio, and Freezed, matching Vitalii's usual Very Good stack. A Very Good workspace with `packages/release_copilot_core`, `apps/release_copilot`, `packages/release_copilot_cli`, and `packages/release_copilot_mcp` is the intended layout for this tool's own code. Melos support for the user's multi-package apps is not in the MVP.
+One Flutter app package, **`abel`**, at the repo root. Domain logic, store clients, git and version writes, process running, and note generation live in `lib/features/*/domain` and `lib/features/*/data`, with shared wiring in `lib/core/` and the shell in `lib/app/`. See [architecture.md](architecture.md). The MVP ships the macOS UI only. A CLI and MCP server are post-MVP fronts over the same feature modules. The UI uses BLoC, Dio, and Freezed. Melos support for the user's multi-package apps is not in the MVP.
 
 ```mermaid
 flowchart TB
+  app["lib/app + lib/core DI"]
   ui["Flutter macOS UI\nBLoC"]
-  cli["CLI"]
-  mcp["MCP server\nstdio or local HTTP"]
-  core["Dart core package\nDio, Freezed, domain"]
+  domain["lib/features/*/domain"]
+  data["lib/features/*/data\nDio, Freezed, repos"]
   keychain["macOS Keychain"]
   play["Play Developer API"]
   asc["App Store Connect API"]
   proc["Process runner\nflutter, fastlane, git, xcrun"]
   llm["OpenAI\nSign in with ChatGPT or API key"]
   repo["Local Flutter project"]
-  ui --> core
-  cli --> core
-  mcp --> core
+  cli["CLI post-MVP"]
+  mcp["MCP post-MVP"]
+  app --> ui
+  app --> data
+  ui --> domain
+  data --> domain
+  cli -.-> domain
+  mcp -.-> domain
   mcp -.->|confirm destructive| ui
-  core --> keychain
-  core --> play
-  core --> asc
-  core --> proc
-  core --> llm
-  core --> repo
+  data --> keychain
+  data --> play
+  data --> asc
+  data --> proc
+  data --> llm
+  data --> repo
 ```
 
 The process runner must stream output, support cancel, and record the working directory and command without recording secret flags.
@@ -289,43 +289,25 @@ Availability is narrower for commercial products. Sign in with ChatGPT for ident
 
 ## Security
 
-- Play JSON, ASC .p8 material, OpenAI API keys, and Sign in with ChatGPT tokens never leave the machine. They are not sent to any Release Copilot server (there is none in the MVP), not written to disk outside Keychain, and not included in logs, crash reports, MCP responses, or LLM prompts.
+- Play JSON, ASC .p8 material, OpenAI API keys, and Sign in with ChatGPT tokens never leave the machine. They are not sent to any Release Copilot server (there is none in the MVP), not written to disk outside Keychain, and not included in logs, crash reports, or LLM prompts.
 - The LLM sees only commit subjects and bodies plus tag names and dates. If a commit message looks like a secret (key, token, password), the app warns and can strip that commit before the prompt is sent.
-- The optional MCP HTTP transport binds to 127.0.0.1 only. stdio is the default for Cursor and Claude Code.
-- Destructive MCP tools do not run until the macOS app shows a confirmation the user accepts. A timeout or dismissal cancels the tool call.
 - No analytics of project paths, package names, or store identifiers in the MVP.
-
-<a id="mcp"></a>
-
-## MCP server
-
-The server is a local process over the same Dart core package. stdio is the default so Cursor and Claude Code can attach it as an MCP server. Optional HTTP is loopback only. Tools return structured data, not secret material. `generate_release_notes` returns a draft; pushing notes to a store is an explicit `apply` flag on that tool, or a follow-up confirmation in the app, never an implicit side effect. Tools that act on a project also take a `flavor` when the repo has more than one.
-
-| Tool | Inputs | Outputs | Confirm |
-| --- | --- | --- | --- |
-| `get_versions` | `project_id`, optional `flavor` | Per-track and per-channel version, build, status, last checked | No |
-| `next_build_number` | `project_id`, `flavor` | Proposed marketing version and shared `N`, the max values used, and any skipped non-integer builds | No |
-| `bump_version` | `project_id`, `flavor`, optional marketing version, optional build, `commit`, `tag` | New version written for that flavor and any `v1.2.3` commit or tag created | Yes |
-| `build_and_upload` | `project_id`, `flavor`, platforms, destination track or TestFlight, optional notes id | Build result, upload result, log tail reference | Yes |
-| `get_release_status` | `project_id`, optional `flavor`, optional release id | Processing, review, and rollout state for in-flight and latest releases | No |
-| `generate_release_notes` | `project_id`, optional `flavor`, optional since-tag, locales, stores, optional `apply` | Draft notes per store and locale, character counts, limits. Apply pushes only after confirmation | Apply only |
 
 <a id="milestones"></a>
 
 ## Milestones
 
-About six to eight weeks for one experienced Flutter developer (Vitalii, or an agent he directs), given that notes and MCP are in the MVP. Dates are not fixed; each week has an exit bar.
+About six to seven weeks for one experienced Flutter developer (Vitalii, or an agent he directs), given notes in the MVP and CLI/MCP deferred. Dates are not fixed; each week has an exit bar.
 
 | Week | Focus | Exit bar |
 | --- | --- | --- |
-| 1 | Workspace, core package, Keychain credentials, link a local flavored project | A Play JSON and an ASC key can be stored and retrieved; a repo path and at least two flavor records (package name, bundle ID, scheme, version source) are saved. The Copilot macOS app itself runs locally with ad-hoc or development signing; no Developer ID or notarization is required for this week |
+| 1 | `abel` app shell, Keychain credentials, link a local flavored project | A Play JSON and an ASC key can be stored and retrieved; a repo path and at least two flavor records (package name, bundle ID, scheme, version source) are saved. The Copilot macOS app itself runs locally with ad-hoc or development signing; no Developer ID or notarization is required for this week |
 | 2 | Play and ASC clients, read-only dashboard per flavor | One real flavored app shows live track and TestFlight or App Store versions after a connection test |
 | 3 | Shared next build number, flavor version write, optional `v1.2.3` commit and tag | A confirmed bump writes that flavor's marketing version and shared `N` using the agreed per-flavor max-plus-one rule |
 | 4 | Local `flutter build` for a flavor and scheme, upload, streaming logs | An Android App Bundle and an IPA from a dogfood flavor upload to an internal or TestFlight destination. Production and App Review stay out of this week's automatic path. Signing work this week is the mobile apps' existing certs, plus confirming Copilot still runs locally without a distribution signature |
 | 5 | Polling and macOS notifications | A processing or review change on a dogfood upload produces a notification; 429 backoff is exercised in tests |
 | 6 | Git log, conventional commits, OpenAI drafts, editor, push to stores | The user can Sign in with ChatGPT or paste an API key; notes for a real `v1.2.3` tag range can be edited, clipped to verified limits, and pushed to both stores |
-| 7 | MCP stdio, optional loopback HTTP, confirmation bridge, Cursor wiring | Cursor can read versions for a flavor and request a bump; the bump does not run until the app confirms it |
-| 8 | Dogfood hardening, errors, rate-limit polish, README | A full release day on one of Vitalii's flavored apps works without opening Play Console or App Store Connect, except for signing or review issues the stores still own |
+| 7 | Dogfood hardening, errors, rate-limit polish, README | A full release day on one of Vitalii's flavored apps works without opening Play Console or App Store Connect, except for signing or review issues the stores still own |
 
 <a id="risks"></a>
 
@@ -338,7 +320,7 @@ About six to eight weeks for one experienced Flutter developer (Vitalii, or an a
 - A sandboxed or Mac App Store build of Copilot cannot do this job. Local dogfood must leave the Flutter default sandbox off. Later distribution must stay Developer ID and notarized, not Mac App Store.
 - Aggressive TestFlight polling will hit ASC hourly limits. Polling policy is a first-class design, not an afterthought.
 - Commit messages can still leak secrets into an LLM prompt. Heuristics help; they are not perfect.
-- Fastlane APIs and the official store APIs both move. Prefer official HTTP APIs in the core, and treat Fastlane as an optional upload adapter.
+- Fastlane APIs and the official store APIs both move. Prefer official HTTP APIs in domain/data layers, and treat Fastlane as an optional upload adapter.
 - Sign in with ChatGPT may not be licensable as-is if Release Copilot later becomes a paid product. The API-key fallback must keep working.
 
 ### Remaining questions
@@ -361,6 +343,23 @@ After the dogfood MVP feels like a daily tool, these are the natural extensions 
 - Developer ID signing and notarization so other people can install Copilot under default Gatekeeper, still outside the Mac App Store.
 - Monetization around the $5-a-month goal, still local-first, once the personal tool has proven the loop, including a decision on paid-app access to Sign in with ChatGPT.
 - Optional CI hooks, symbol and mapping upload, and phased-release controls beyond the MVP's status view.
+
+<a id="mcp"></a>
+
+### MCP server and CLI
+
+A local MCP server and a small CLI are fronts over the same `lib/features/*` modules as the UI. stdio is the default MCP transport so Cursor and Claude Code can attach; optional HTTP binds to 127.0.0.1 only. Tools return structured data, not secret material. Destructive MCP tools do not run until the macOS app shows a confirmation the user accepts. A timeout or dismissal cancels the tool call. `generate_release_notes` returns a draft; pushing notes to a store is an explicit `apply` flag on that tool, or a follow-up confirmation in the app, never an implicit side effect. Tools that act on a project also take a `flavor` when the repo has more than one.
+
+| Tool | Inputs | Outputs | Confirm |
+| --- | --- | --- | --- |
+| `get_versions` | `project_id`, optional `flavor` | Per-track and per-channel version, build, status, last checked | No |
+| `next_build_number` | `project_id`, `flavor` | Proposed marketing version and shared `N`, the max values used, and any skipped non-integer builds | No |
+| `bump_version` | `project_id`, `flavor`, optional marketing version, optional build, `commit`, `tag` | New version written for that flavor and any `v1.2.3` commit or tag created | Yes |
+| `build_and_upload` | `project_id`, `flavor`, platforms, destination track or TestFlight, optional notes id | Build result, upload result, log tail reference | Yes |
+| `get_release_status` | `project_id`, optional `flavor`, optional release id | Processing, review, and rollout state for in-flight and latest releases | No |
+| `generate_release_notes` | `project_id`, optional `flavor`, optional since-tag, locales, stores, optional `apply` | Draft notes per store and locale, character counts, limits. Apply pushes only after confirmation | Apply only |
+
+User story (post-MVP): Cursor or Claude Code can read versions, propose a bump, generate notes, and start a build over MCP; any write, upload, or push waits for confirmation in the app.
 
 <a id="sources"></a>
 
