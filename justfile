@@ -30,7 +30,11 @@ gen:
     echo "Code generation completed successfully!"
 
 check:
-    fvm dart format --set-exit-if-changed . && fvm flutter analyze --fatal-infos
+    fvm dart format --set-exit-if-changed . && \
+    fvm flutter analyze --fatal-infos && \
+    fvm dart run dart_code_linter:metrics analyze lib --set-exit-on-violation-level=warning && \
+    fvm dart run dart_code_linter:metrics check-unused-files lib --fatal-unused && \
+    fvm dart run dart_code_linter:metrics check-unused-code lib --fatal-unused
 
 # Paths must be under test/. TZ=Europe/Berlin so DST tests see real clock changes.
 test *paths:
