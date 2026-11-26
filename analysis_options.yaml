@@ -5,12 +5,7 @@ analyzer:
     always_put_required_named_parameters_first: error
   exclude:
     - build/**
-    - android/**
-    - ios/**
-    - web/**
-    - windows/**
     - macos/**
-    - linux/**
     - "**/*.g.dart"
     - "**/*.freezed.dart"
     - "**/*.config.dart"
