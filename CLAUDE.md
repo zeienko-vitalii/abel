@@ -1,5 +1,7 @@
 <!-- AGENTS.md and .github/copilot-instructions.md are symlinks to this file. Edit here only. -->
 
+**Abel** is the working name for **Release Copilot** — a local macOS Flutter app that assists App Store / Play release workflows.
+
 Be extremely concise in chat and commits; sacrifice grammar for concision.
 
 - Commits and PR titles follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/): `<type>[optional scope][!]: <description>`; `!` or a `BREAKING CHANGE:` footer for breaking changes.

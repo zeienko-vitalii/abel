@@ -1,5 +1,7 @@
 # Release Copilot MVP Spec
 
+Repo: `abel` (Abel = Release Copilot).
+
 High-level product and technical spec for a local-first macOS Flutter app that takes a Flutter project from live store versions to the next build, upload, notes, and status, including AI release notes and an MCP server in the first cut.
 
 - [Overview, goals, and non-goals](#overview)
